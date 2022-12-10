@@ -107,7 +107,8 @@ sudo -E tee /etc/docker/daemon.json <<EOF
   },
   "storage-driver": "overlay2",
   "live-restore": true,
-  "dns": [${docker_dns_list}]
+  "dns": [${docker_dns_list}],
+	"data-root": "/nvme_data/others/minikube"
 }
 EOF
 
