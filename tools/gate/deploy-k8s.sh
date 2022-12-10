@@ -18,7 +18,7 @@ set -ex
 : "${MINIKUBE_VERSION:="v1.25.2"}"
 : "${CALICO_VERSION:="v3.20"}"
 : "${YQ_VERSION:="v4.6.0"}"
-: "${KUBE_DNS_IP="10.96.0.10"}"
+: "${KUBE_DNS_IP="10.20.0.10"}"
 
 export DEBCONF_NONINTERACTIVE_SEEN=true
 export DEBIAN_FRONTEND=noninteractive
@@ -93,13 +93,6 @@ configure_resolvconf
 . /etc/os-release
 
 # NOTE: Add docker repo
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo apt-key fingerprint 0EBFCD88
-sudo add-apt-repository \
-  "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) \
-  stable"
-
 # NOTE: Configure docker
 docker_resolv="/run/systemd/resolve/resolv.conf"
 docker_dns_list="$(awk '/^nameserver/ { printf "%s%s",sep,"\"" $NF "\""; sep=", "} END{print ""}' "${docker_resolv}")"
@@ -129,32 +122,6 @@ EOF
 fi
 
 # Install required packages for K8s on host
-wget -q -O- 'https://download.ceph.com/keys/release.asc' | sudo apt-key add -
-RELEASE_NAME=$(grep 'CODENAME' /etc/lsb-release | awk -F= '{print $2}')
-sudo add-apt-repository "deb https://download.ceph.com/debian-nautilus/
-${RELEASE_NAME} main"
-
-sudo -E apt-get update
-sudo -E apt-get install -y \
-  docker-ce \
-  docker-ce-cli \
-  containerd.io=1.5.11-1 \
-  socat \
-  jq \
-  util-linux \
-  bridge-utils \
-  iptables \
-  conntrack \
-  libffi-dev \
-  ipvsadm \
-  make \
-  bc \
-  git-review \
-  notary \
-  ceph-common \
-  rbd-nbd \
-  nfs-common
-
 sudo -E tee /etc/modprobe.d/rbd.conf << EOF
 install rbd /bin/true
 EOF
@@ -187,8 +154,8 @@ rm -rf "${TMP_DIR}"
 
 # NOTE: Deploy kubernetes using minikube. A CNI that supports network policy is
 # required for validation; use calico for simplicity.
-sudo -E minikube config set kubernetes-version "${KUBE_VERSION}"
-sudo -E minikube config set vm-driver none
+minikube config set kubernetes-version "${KUBE_VERSION}"
+minikube config set vm-driver none
 
 # NOTE: set RemoveSelfLink to false, to enable it as it is required by the ceph-rbd-provisioner.
 # SelfLinks were deprecated in k8s v1.16, and in k8s v1.20, they are
@@ -202,15 +169,15 @@ api_server_status="$(set +e; sudo -E minikube status --format='{{.APIServer}}')"
 set -e
 echo "Minikube api server status is \"${api_server_status}\""
 if [[ "${api_server_status}" != "Running" ]]; then
-  sudo -E minikube start \
+  minikube start \
     --docker-env HTTP_PROXY="${HTTP_PROXY}" \
     --docker-env HTTPS_PROXY="${HTTPS_PROXY}" \
-    --docker-env NO_PROXY="${NO_PROXY},10.96.0.0/12" \
+    --docker-env NO_PROXY="${NO_PROXY},10.20.0.0/16" \
     --network-plugin=cni \
     --wait=apiserver,system_pods \
     --apiserver-names="$(hostname -f)" \
     --extra-config=controller-manager.allocate-node-cidrs=true \
-    --extra-config=controller-manager.cluster-cidr=192.168.0.0/16 \
+    --extra-config=controller-manager.cluster-cidr=10.10.0.0/16 \
     --extra-config=kube-proxy.mode=ipvs \
     --extra-config=apiserver.service-node-port-range=1-65535 \
     --extra-config=kubelet.cgroup-driver=systemd \
@@ -221,7 +188,7 @@ fi
 
 sudo -E systemctl enable --now kubelet
 
-sudo -E minikube addons list
+minikube addons list
 
 curl -LSs https://docs.projectcalico.org/archive/"${CALICO_VERSION}"/manifests/calico.yaml -o /tmp/calico.yaml
 

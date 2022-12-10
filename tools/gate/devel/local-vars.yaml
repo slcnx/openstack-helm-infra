@@ -13,4 +13,7 @@
 ---
 kubernetes_network_default_device: docker0
 gate_fqdn_test: true
-...
+proxy:
+  http: http://192.168.0.110:808
+  https: http://192.168.0.110:808
+  noproxy: 10.10.0.0/16,10.20.0.0/16,192.168.0.0/24,.svc.cluster.local,127.0.0.1,localhost

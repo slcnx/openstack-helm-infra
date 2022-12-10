@@ -2,6 +2,17 @@
 Openstack-Helm-Infra
 ====================
 
+由于我的系统是 CentOS 7.6.1810
+20C 32G
+```bash
+export PodNET=10.10.0.0/16 # flannel/calico
+export ServiceNet=10.20.0.0/16 # service
+export localNet=192.168.0.0/24
+```
+
+需要修改下`tools/gate/deploy-k8s.sh` 文件中的服务名
+
+
 Mission
 -------
 
