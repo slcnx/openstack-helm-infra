@@ -60,13 +60,6 @@ configure_resolvconf
 # shellcheck disable=SC1091
 . /etc/os-release
 
-# NOTE: Add docker repo
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo apt-key fingerprint 0EBFCD88
-sudo add-apt-repository \
-  "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) \
-  stable"
 
 # NOTE: Configure docker
 docker_resolv="/run/systemd/resolve/resolv.conf"
@@ -82,7 +75,8 @@ sudo -E tee /etc/docker/daemon.json <<EOF
   },
   "storage-driver": "overlay2",
   "live-restore": true,
-  "dns": [${docker_dns_list}]
+  "dns": [${docker_dns_list}],
+	"data-root": "/nvme_data/others/minikube"
 }
 EOF
 
@@ -96,60 +90,50 @@ Environment="NO_PROXY=${NO_PROXY}"
 EOF
 fi
 
-sudo -E apt-get update
-sudo -E apt-get install -y \
-  docker-ce \
-  docker-ce-cli \
-  containerd.io \
-  socat \
-  jq \
-  util-linux \
-  bridge-utils \
-  iptables \
-  conntrack \
-  libffi-dev \
-  ipvsadm \
-  make \
-  bc \
-  git-review \
-  notary
 
-# Prepare tmpfs for etcd when running on CI
-# CI VMs can have slow I/O causing issues for etcd
-# Only do this on CI (when user is zuul), so that local development can have a kubernetes
-# environment that will persist on reboot since etcd data will stay intact
-if [ "$USER" = "zuul" ]; then
-  sudo mkdir -p /var/lib/kubeadm/etcd
-  sudo mount -t tmpfs -o size=512m tmpfs /var/lib/kubeadm/etcd
-fi
 
+# 解压直接是二进制文件
 # Install YQ
+which yq || {
 wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64.tar.gz -O - | tar xz && sudo mv yq_linux_amd64 /usr/local/bin/yq
+}
 
-# Install kubeadm kubectl and kublet
 
-echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo apt-get update
-sudo apt-get install -y kubelet=$KUBE_VERSION kubeadm=$KUBE_VERSION kubectl=$KUBE_VERSION
-sudo apt-mark hold kubelet kubeadm kubectl
-
+which helm || {
+# 解压有目录,  --strip-components=1
 # Install Helm
 TMP_DIR=$(mktemp -d)
 sudo -E bash -c \
   "curl -sSL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar -zxv --strip-components=1 -C ${TMP_DIR}"
 sudo -E mv "${TMP_DIR}"/helm /usr/local/bin/helm
 rm -rf "${TMP_DIR}"
+}
+
+# Install kubeadm kubectl and kublet
+cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+EOF
+#setenforce 0
+yum install -y kubeadm-1.25.3-0 kubectl-1.25.3-0 kubelet-1.25.3-0 -y
+systemctl enable kubelet && systemctl start kubelet
 
 # NOTE: Deploy kubernetes using kubeadm. A CNI that supports network policy is
 # required for validation; use calico for simplicity.
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+# install dockerd-cri
+#sudo kubeadm init --pod-network-cidr=10.10.0.0/16 --service-cidr=10.20.0.0/16 --cri-socket=unix:///var/run/cri-dockerd.sock
 
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # Taing the node so that the pods can be deployed on master nodes.
-kubectl taint nodes --all node-role.kubernetes.io/master-
+kubectl taint nodes --all node-role.kubernetes.io/master- || true
 
 curl https://docs.projectcalico.org/"${CALICO_VERSION}"/manifests/calico.yaml -o /tmp/calico.yaml
 

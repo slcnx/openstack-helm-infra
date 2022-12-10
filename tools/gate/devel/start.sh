@@ -67,7 +67,7 @@ if [ "x${DEPLOY}" == "xsetup-host" ]; then
   PLAYBOOKS="osh-infra-deploy-docker"
 elif [ "x${DEPLOY}" == "xk8s" ]; then
   ${WORK_DIR}/tools/deployment/common/000-install-packages.sh
-  ${WORK_DIR}/tools/gate/deploy-k8s.sh
+  ${WORK_DIR}/tools/gate/deploy-k8s-kubeadm.sh
   exit 0
 elif [ "x${DEPLOY}" == "xlogs" ]; then
   PLAYBOOKS="osh-infra-collect-logs"

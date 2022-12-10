@@ -137,21 +137,7 @@ if [ "$USER" = "zuul" ]; then
 fi
 
 # Install YQ
-wget https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64.tar.gz -O - | tar xz && sudo mv yq_linux_amd64 /usr/local/bin/yq
 
-# Install minikube and kubectl
-URL="https://storage.googleapis.com"
-sudo -E curl -sSLo /usr/local/bin/minikube "${URL}"/minikube/releases/"${MINIKUBE_VERSION}"/minikube-linux-amd64
-sudo -E curl -sSLo /usr/local/bin/kubectl "${URL}"/kubernetes-release/release/"${KUBE_VERSION}"/bin/linux/amd64/kubectl
-sudo -E chmod +x /usr/local/bin/minikube
-sudo -E chmod +x /usr/local/bin/kubectl
-
-# Install Helm
-TMP_DIR=$(mktemp -d)
-sudo -E bash -c \
-  "curl -sSL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar -zxv --strip-components=1 -C ${TMP_DIR}"
-sudo -E mv "${TMP_DIR}"/helm /usr/local/bin/helm
-rm -rf "${TMP_DIR}"
 
 # NOTE: Deploy kubernetes using minikube. A CNI that supports network policy is
 # required for validation; use calico for simplicity.
@@ -169,23 +155,23 @@ set +e
 api_server_status="$(set +e; sudo -E minikube status --format='{{.APIServer}}')"
 set -e
 echo "Minikube api server status is \"${api_server_status}\""
-if [[ "${api_server_status}" != "Running" ]]; then
-  minikube start \
-    --docker-env HTTP_PROXY="${HTTP_PROXY}" \
-    --docker-env HTTPS_PROXY="${HTTPS_PROXY}" \
-    --docker-env NO_PROXY="${NO_PROXY},10.20.0.0/16" \
-    --network-plugin=cni \
-    --wait=apiserver,system_pods \
-    --apiserver-names="$(hostname -f)" \
-    --extra-config=controller-manager.allocate-node-cidrs=true \
-    --extra-config=controller-manager.cluster-cidr=10.10.0.0/16 \
-    --extra-config=kube-proxy.mode=ipvs \
-    --extra-config=apiserver.service-node-port-range=1-65535 \
-    --extra-config=kubelet.cgroup-driver=systemd \
-    --extra-config=kubelet.resolv-conf=/run/systemd/resolve/resolv.conf \
-    --feature-gates=RemoveSelfLink=false \
-    --embed-certs
-fi
+#if [[ "${api_server_status}" != "Running" ]]; then
+#  minikube start \
+#    --docker-env HTTP_PROXY="${HTTP_PROXY}" \
+#    --docker-env HTTPS_PROXY="${HTTPS_PROXY}" \
+#    --docker-env NO_PROXY="${NO_PROXY},10.20.0.0/16" \
+#    --network-plugin=cni \
+#		 --service-cluster-ip-range=10.20.0.0/16 \
+#    --wait=apiserver,system_pods \
+#    --apiserver-names="$(hostname -f)" \
+#    --extra-config=controller-manager.allocate-node-cidrs=true \
+#    --extra-config=controller-manager.cluster-cidr=10.10.0.0/16 \
+#    --extra-config=kube-proxy.mode=ipvs \
+#    --extra-config=apiserver.service-node-port-range=1-65535 \
+#    --extra-config=kubelet.cgroup-driver=systemd \
+#    --feature-gates=RemoveSelfLink=false \
+#    --embed-certs
+#fi
 
 sudo -E systemctl enable --now kubelet
 
