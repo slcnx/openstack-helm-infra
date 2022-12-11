@@ -120,13 +120,14 @@ repo_gpgcheck=1
 gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
 EOF
 #setenforce 0
+yum remove kubeadm kubectl kubelet -y
 yum install kubeadm-1.22.17-0 kubectl-1.22.17-0 kubelet-1.22.17-0 -y
 systemctl enable kubelet && systemctl start kubelet
 
 # NOTE: Deploy kubernetes using kubeadm. A CNI that supports network policy is
 # required for validation; use calico for simplicity.
 # install dockerd-cri
-kubeadm init --config kubeadm-1.22.17.conf
+kubeadm init --config kubeadm-1.22.17.conf 
 
 
 mkdir -p $HOME/.kube
