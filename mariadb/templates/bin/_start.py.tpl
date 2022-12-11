@@ -35,9 +35,9 @@ import kubernetes.config
 
 # Create logger, console handler and formatter
 logger = logging.getLogger('OpenStack-Helm Mariadb')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
+ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -397,9 +397,12 @@ def get_configmap_value(key, type='data'):
     type -- the type of data to retrive from the configmap, can either be 'data'
             or an 'annotation'. (default data)
     """
+		
+
     state_configmap = k8s_api_instance.read_namespaced_config_map(
         name=state_configmap_name, namespace=pod_namespace)
     state_configmap_dict = state_configmap.to_dict()
+    logger.debug(f"state_configmap_name: {state_configmap_name},\n pod_namespace: {pod_namespace}, \nstate_configmap_dict: {state_configmap_dict}")
     if type == 'data':
         state_configmap_data = state_configmap_dict['data']
     elif type == 'annotation':
@@ -419,6 +422,7 @@ def get_cluster_state():
     if it does not already exist.
     """
     logger.info("Getting cluster state")
+    logger.debug('debug get cluster state')
     state = None
     while state is None:
         try:

@@ -60,7 +60,7 @@ images:
 storage:
   type: hostPath
   hostPath:
-    path: /var/lib/openstack-helm/nfs
+    path: /nvme_data/others/nfs
   persistentVolumeClaim:
     access_mode: ReadWriteOnce
     class_name: general

@@ -137,46 +137,6 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 # Taing the node so that the pods can be deployed on master nodes.
 kubectl taint nodes --all node-role.kubernetes.io/master- || true
 
-curl https://docs.projectcalico.org/"${CALICO_VERSION}"/manifests/calico.yaml -o /tmp/calico.yaml
-kubectl apply -f /tmp/calico.yaml
-
-
-# Note: Patch calico daemonset to enable Prometheus metrics and annotations
-tee /tmp/calico-node.yaml << EOF
-spec:
-  template:
-    metadata:
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "9091"
-    spec:
-      containers:
-        - name: calico-node
-          env:
-            - name: FELIX_PROMETHEUSMETRICSENABLED
-              value: "true"
-            - name: FELIX_PROMETHEUSMETRICSPORT
-              value: "9091"
-            - name: FELIX_IGNORELOOSERPF
-              value: "true"
-            - name: CALICO_IPV4POOL_CIDR
-              value: "10.10.0.0/16"
-EOF
-kubectl -n kube-system patch daemonset calico-node --patch "$(cat /tmp/calico-node.yaml)"
-
-kubectl get pod -A
-kubectl -n kube-system get pod -l k8s-app=kube-dns
-
-# NOTE: Wait for dns to be running.
-END=$(($(date +%s) + 240))
-until kubectl --namespace=kube-system \
-        get pods -l k8s-app=kube-dns --no-headers -o name | grep -q "^pod/coredns"; do
-  NOW=$(date +%s)
-  [ "${NOW}" -gt "${END}" ] && exit 1
-  echo "still waiting for dns"
-  sleep 10
-done
-kubectl -n kube-system wait --timeout=240s --for=condition=Ready pods -l k8s-app=kube-dns
 
 # Remove stable repo, if present, to improve build time
 helm repo remove stable || true
@@ -208,3 +168,48 @@ EOF
 
 kubectl create -f /tmp/${NAMESPACE}-ns.yaml
 done
+
+
+
+
+exit
+curl https://docs.projectcalico.org/"${CALICO_VERSION}"/manifests/calico.yaml -o /tmp/calico.yaml
+kubectl apply -f /tmp/calico.yaml
+
+
+# Note: Patch calico daemonset to enable Prometheus metrics and annotations
+tee /tmp/calico-node.yaml << EOF
+spec:
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+    spec:
+      containers:
+        - name: calico-node
+          env:
+            - name: FELIX_PROMETHEUSMETRICSENABLED
+              value: "true"
+            - name: FELIX_PROMETHEUSMETRICSPORT
+              value: "9091"
+            - name: FELIX_IGNORELOOSERPF
+              value: "true"
+            - name: CALICO_IPV4POOL_CIDR
+              value: "10.10.0.0/16"
+EOF
+kubectl -n kube-system patch daemonset calico-node --patch "$(cat /tmp/calico-node.yaml)"
+
+kubectl get pod -A
+kubectl -n kube-system get pod -l k8s-app=kube-dns
+# NOTE: Wait for dns to be running.
+END=$(($(date +%s) + 240))
+until kubectl --namespace=kube-system \
+        get pods -l k8s-app=kube-dns --no-headers -o name | grep -q "^pod/coredns"; do
+  NOW=$(date +%s)
+  [ "${NOW}" -gt "${END}" ] && exit 1
+  echo "still waiting for dns"
+  sleep 10
+done
+kubectl -n kube-system wait --timeout=240s --for=condition=Ready pods -l k8s-app=kube-dns
+
