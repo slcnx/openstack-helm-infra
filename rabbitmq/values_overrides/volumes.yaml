@@ -1,0 +1,4 @@
+volume:
+  use_local_path:
+    enabled: true
+    host_path: /nvme_data/others/rabbitmq

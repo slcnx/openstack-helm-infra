@@ -137,33 +137,31 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 kubectl taint nodes --all node-role.kubernetes.io/master- || true
 
 curl https://docs.projectcalico.org/"${CALICO_VERSION}"/manifests/calico.yaml -o /tmp/calico.yaml
-
-kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/tigera-operator.yaml
-
-wget https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/custom-resources.yaml -O /tmp/custom-resources.yaml
-sed -i "s@192.168.0.0/16@10.10.0.0/16@g" /tmp/custom-resources.yaml
+kubectl apply -f /tmp/calico.yaml
 
 
 # Note: Patch calico daemonset to enable Prometheus metrics and annotations
-#tee /tmp/calico-node.yaml << EOF
-#spec:
-#  template:
-#    metadata:
-#      annotations:
-#        prometheus.io/scrape: "true"
-#        prometheus.io/port: "9091"
-#    spec:
-#      containers:
-#        - name: calico-node
-#          env:
-#            - name: FELIX_PROMETHEUSMETRICSENABLED
-#              value: "true"
-#            - name: FELIX_PROMETHEUSMETRICSPORT
-#              value: "9091"
-#            - name: FELIX_IGNORELOOSERPF
-#              value: "true"
-#EOF
-#kubectl -n kube-system patch daemonset calico-node --patch "$(cat /tmp/calico-node.yaml)"
+tee /tmp/calico-node.yaml << EOF
+spec:
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+    spec:
+      containers:
+        - name: calico-node
+          env:
+            - name: FELIX_PROMETHEUSMETRICSENABLED
+              value: "true"
+            - name: FELIX_PROMETHEUSMETRICSPORT
+              value: "9091"
+            - name: FELIX_IGNORELOOSERPF
+              value: "true"
+            - name: CALICO_IPV4POOL_CIDR
+              value: "10.10.0.0/16"
+EOF
+kubectl -n kube-system patch daemonset calico-node --patch "$(cat /tmp/calico-node.yaml)"
 
 kubectl get pod -A
 kubectl -n kube-system get pod -l k8s-app=kube-dns
