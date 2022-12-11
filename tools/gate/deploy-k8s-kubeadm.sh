@@ -120,13 +120,13 @@ repo_gpgcheck=1
 gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
 EOF
 #setenforce 0
-yum install kubeadm-1.17.17-0 kubectl-1.17.17-0 kubelet-1.17.17-0 -y
+yum install kubeadm-1.19.16-0 kubectl-1.19.16-0 kubelet-1.19.16-0 -y
 systemctl enable kubelet && systemctl start kubelet
 
 # NOTE: Deploy kubernetes using kubeadm. A CNI that supports network policy is
 # required for validation; use calico for simplicity.
 # install dockerd-cri
-kubeadm init --kubernetes-version 1.17.0 --pod-network-cidr=10.10.0.0/16 --service-cidr=10.20.0.0/16  --node-name 192.168.0.35
+kubeadm init --kubernetes-version 1.19.16 --pod-network-cidr=10.10.0.0/16 --service-cidr=10.20.0.0/16  --node-name 192.168.0.35
 
 
 mkdir -p $HOME/.kube
