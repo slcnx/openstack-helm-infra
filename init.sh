@@ -9,6 +9,7 @@
 #Description：          A test toy
 #Copyright (C):        2022 All rights reserved
 #********************************************************************
+cd ../openstack-helm
 ./tools/deployment/developer/common/020-setup-client.sh
 # ceph, openstack, ingress
 ./tools/deployment/component/common/ingress.sh
