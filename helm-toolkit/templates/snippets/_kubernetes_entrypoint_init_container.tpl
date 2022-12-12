@@ -95,7 +95,7 @@ return: |
             apiVersion: v1
             fieldPath: metadata.namespace
       - name: INTERFACE_NAME
-        value: eth0
+        value: br0
       - name: PATH
         value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/
       - name: DEPENDENCY_SERVICE
@@ -180,7 +180,7 @@ Values:
           apiVersion: v1
           fieldPath: metadata.namespace
     - name: INTERFACE_NAME
-      value: eth0
+      value: br0
     - name: PATH
       value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/
     - name: DEPENDENCY_SERVICE

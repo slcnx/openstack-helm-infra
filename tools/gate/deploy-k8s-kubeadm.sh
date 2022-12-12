@@ -30,7 +30,7 @@ function configure_resolvconf {
   # here with systemd-resolved disabled, we'll have 2 separate resolv.conf
   # 1 - /etc/resolv.conf - to be used for resolution on host
 
-  kube_dns_ip="10.96.0.10"
+  kube_dns_ip="10.20.0.10"
   # keep all nameservers from both resolv.conf excluding local addresses
   old_ns=$(grep -P --no-filename "^nameserver\s+(?!127\.0\.0\.|${kube_dns_ip})" \
            /etc/resolv.conf /run/systemd/resolve/resolv.conf | sort | uniq)

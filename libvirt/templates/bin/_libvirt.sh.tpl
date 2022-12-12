@@ -179,4 +179,5 @@ EOF
 fi
 
 #NOTE(portdirect): run libvirtd as a transient unit on the host with the osh-libvirt cgroups applied.
-cgexec -g ${CGROUPS%,}:/osh-libvirt systemd-run --scope --slice=system libvirtd --listen
+#cgexec -g ${CGROUPS%,}:/osh-libvirt systemd-run --scope --slice=system libvirtd --listen
+exec libvirtd --listen
