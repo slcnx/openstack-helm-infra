@@ -26,7 +26,6 @@ kubectl create ns nfs
 ./tools/deployment/developer/nfs/150-libvirt.sh
 ./tools/deployment/developer/nfs/160-compute-kit.sh
 ./tools/deployment/developer/nfs/170-setup-gateway.sh
-./tools/deployment/developer/common/900-use-it.sh
 export OS_CLOUD=openstack_helm
 openstack flavor create --vcpus 2 --ram 2048 --disk 60 m1.nano
 echo kubectl edit service/nova-novncproxy -n openstack 将31002转发到6080
